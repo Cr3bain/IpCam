@@ -1,10 +1,8 @@
 package tr.com.gndg.ipcam.ui
 
-import android.graphics.*
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.ImageProxy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
@@ -13,11 +11,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import tr.com.gndg.ipcam.server.MJPEGStreamer
-import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 
-fun ImageProxy.toBitmap(): Bitmap? {
+/*fun ImageProxy.toBitmap(): Bitmap? {
     // YUV_420_888 formatındaki görüntüyü NV21'e dönüştürme
     val yBuffer = planes[0].buffer
     val uBuffer = planes[1].buffer
@@ -39,7 +35,7 @@ fun ImageProxy.toBitmap(): Bitmap? {
     val imageBytes = out.toByteArray()
 
     return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-}
+}*/
 
 @Composable
 fun CameraPreview(streamer: MJPEGStreamer) {
@@ -54,11 +50,18 @@ fun CameraPreview(streamer: MJPEGStreamer) {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            val preview = androidx.camera.core.Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
+            val preview = androidx.camera.core.Preview.Builder()
+                //.setTargetFrameRate(Range(30, 30))
+                .build().also {
+                    it.surfaceProvider = previewView.surfaceProvider
             }
 
-            val imageAnalyzer = ImageAnalysis.Builder().build().also {
+            // Çözünürlük ve FPS ayarları
+
+
+            val imageAnalyzer = ImageAnalysis.Builder()
+                //.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build().also {
                 it.setAnalyzer(executor) { imageProxy ->
                     try {
                         val bitmap = imageProxy.toBitmap()
