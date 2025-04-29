@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">IpCam</string>
+    <string name="cameraIp">Camera IP address %s:%s</string>
+    <string name="permissions">You cannot use the app without the necessary permissions</string>
+    <string name="serverNotStarted">Failed to initialize server</string>
 </resources>

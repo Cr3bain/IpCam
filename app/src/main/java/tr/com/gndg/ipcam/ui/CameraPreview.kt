@@ -3,9 +3,12 @@ package tr.com.gndg.ipcam.ui
 import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -38,9 +41,10 @@ import java.util.concurrent.Executors
 }*/
 
 @Composable
-fun CameraPreview(streamer: MJPEGStreamer) {
+fun CameraPreview(streamer: MJPEGStreamer,
+                  modifier: Modifier) {
     val context = LocalContext.current
-    val lifecycleOwner = androidx.compose.runtime.rememberUpdatedState(LocalContext.current as LifecycleOwner).value
+    val lifecycleOwner = rememberUpdatedState(LocalContext.current as LifecycleOwner).value
     val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
     AndroidView(factory = {
@@ -50,7 +54,7 @@ fun CameraPreview(streamer: MJPEGStreamer) {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
 
-            val preview = androidx.camera.core.Preview.Builder()
+            val preview = Preview.Builder()
                 //.setTargetFrameRate(Range(30, 30))
                 .build().also {
                     it.surfaceProvider = previewView.surfaceProvider
@@ -65,7 +69,7 @@ fun CameraPreview(streamer: MJPEGStreamer) {
                 it.setAnalyzer(executor) { imageProxy ->
                     try {
                         val bitmap = imageProxy.toBitmap()
-                        if (bitmap != null) {
+                        if (true) {
                             streamer.updateBitmap(bitmap)
                         }
                     } catch (e: Exception) {
@@ -88,5 +92,6 @@ fun CameraPreview(streamer: MJPEGStreamer) {
         }, ContextCompat.getMainExecutor(context))
 
         previewView
-    })
+    },
+        modifier = modifier)
 }

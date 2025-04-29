@@ -1,19 +1,18 @@
 package tr.com.gndg.ipcam.server
 
-import fi.iki.elonen.NanoHTTPD
-import java.io.InputStream
-import java.io.PipedInputStream
-import java.io.PipedOutputStream
 import android.graphics.Bitmap
+import fi.iki.elonen.NanoHTTPD
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 import kotlin.concurrent.thread
 
 class MJPEGStreamer(port: Int) : NanoHTTPD(port) {
 
     private val boundary = "boundary"
     @Volatile private var currentBitmap: Bitmap? = null
-    private val listeners = mutableListOf<(Bitmap) -> Unit>()
+    //private val listeners = mutableListOf<(Bitmap) -> Unit>()
 
     override fun serve(session: IHTTPSession?): Response {
         val pipedInput = PipedInputStream()
@@ -38,7 +37,7 @@ class MJPEGStreamer(port: Int) : NanoHTTPD(port) {
 
                     Thread.sleep(100) // FPS ayarı (10 kare/saniye gibi düşün)
                 }
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 // istemci bağlantısı kesildi
                 pipedOutput.close()
             }

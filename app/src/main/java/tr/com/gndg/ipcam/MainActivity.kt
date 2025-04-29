@@ -1,73 +1,94 @@
 package tr.com.gndg.ipcam
 
-import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import kotlinx.coroutines.*
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import tr.com.gndg.ipcam.utils.MyLifecycleObserver
+import tr.com.gndg.ipcam.utils.ObserverListenerInterface
 import tr.com.gndg.ipcam.server.MJPEGStreamer
 import tr.com.gndg.ipcam.ui.CameraPreview
 import tr.com.gndg.ipcam.ui.theme.IpCamTheme
-import tr.com.gndg.ipcam.ui.utils.getLocalIpAddress
+import tr.com.gndg.ipcam.utils.getLocalIpAddress
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), ObserverListenerInterface{
 
     private lateinit var streamer: MJPEGStreamer
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private lateinit var observer : MyLifecycleObserver
+
+    override fun multiplePermission(arrayMap: Map<String, Boolean>) {
+        arrayMap.forEach { (permissionName, isGranted) ->
+            Toast.makeText(this, "$permissionName ${if (isGranted) "granted" else "denied"}", Toast.LENGTH_LONG).show()
+        }
+
+        if (arrayMap.values.all { it }) {
+            initializeStreamer()
+        }
+    }
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val requestPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
-                val granted = permissions.entries.all { it.value }
-                if (granted) {
+        observer = MyLifecycleObserver(activityResultRegistry, this)
+        lifecycle.addObserver(observer)
+
+        lifecycleScope.launch {
+            lifecycle.repeatOnLifecycle(Lifecycle.State.CREATED) {
+                if (observer.hasPermissions(this@MainActivity)) {
                     initializeStreamer()
                 } else {
-                    Toast.makeText(this, "Tüm izinler gerekli", Toast.LENGTH_SHORT).show()
+                    observer.permissionRequest()
                 }
             }
-
-        val requiredPermissions = arrayOf(
-            Manifest.permission.CAMERA,
-            Manifest.permission.ACCESS_WIFI_STATE
-        )
-
-        if (requiredPermissions.all {
-                ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
-            }
-        ) {
-            initializeStreamer()
-        } else {
-            requestPermissionLauncher.launch(requiredPermissions)
         }
     }
 
     private fun initializeStreamer() {
-        streamer = MJPEGStreamer(8080)
+        val context = applicationContext
+        val port = 8080
+        streamer = MJPEGStreamer(port)
 
         coroutineScope.launch {
             try {
-                streamer.start()
-                Log.d("MJPEG", "Streamer started at port 8080")
 
                 withContext(Dispatchers.Main) {
                     setContent {
                         IpCamTheme {
                             Surface(modifier = Modifier.fillMaxSize()) {
-                                CameraStreamScreen(streamer)
+                                CameraStreamScreen(streamer, modifier = Modifier, port = port)
                             }
                         }
                     }
@@ -75,7 +96,7 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 Log.e("MJPEG", "Error starting streamer", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "Sunucu başlatılamadı", Toast.LENGTH_SHORT)
+                    Toast.makeText(this@MainActivity, context.getString(R.string.serverNotStarted), Toast.LENGTH_SHORT)
                         .show()
                 }
             }
@@ -93,20 +114,51 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CameraStreamScreen(streamer: MJPEGStreamer) {
+fun CameraStreamScreen(streamer: MJPEGStreamer, modifier: Modifier, port: Int) {
     val context = LocalContext.current
 
     val ip = getLocalIpAddress(context)
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        CameraPreview(streamer)
+    var openScreen by remember { mutableStateOf(false) }
 
-        Spacer(modifier = Modifier.height(16.dp))
+    Column(modifier = modifier.fillMaxWidth()) {
 
-        Text(
-            text = "Yayın bağlantısı: http://${ip}:8080/",
-            modifier = Modifier.padding(16.dp)
-        )
+        ListItem(headlineContent = {
+            Text(
+                text = stringResource(R.string.cameraIp, ip, port),
+                style = MaterialTheme.typography.bodyMedium)
+        },
+            leadingContent = {
+                if (streamer.isAlive) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null
+                    )
+                }
+            },
+            trailingContent = {
+                Switch(checked = openScreen, onCheckedChange = {
+                    if (openScreen) {
+                        streamer.stop()
+                    } else {
+                        streamer.start()
+                    }
+                    openScreen = it
+                })
+            })
+
+        if (openScreen) {
+            CameraPreview(
+                streamer = streamer,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }

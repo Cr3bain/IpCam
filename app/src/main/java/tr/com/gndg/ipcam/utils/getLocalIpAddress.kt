@@ -1,4 +1,4 @@
-package tr.com.gndg.ipcam.ui.utils
+package tr.com.gndg.ipcam.utils
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -19,7 +19,7 @@ fun getLocalIpAddress(context: Context): String {
 
     return try {
         InetAddress.getByAddress(ipBytes).hostAddress ?: "0.0.0.0"
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         "0.0.0.0"
     }
 }
