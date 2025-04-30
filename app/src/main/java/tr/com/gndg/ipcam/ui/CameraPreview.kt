@@ -1,6 +1,8 @@
 package tr.com.gndg.ipcam.ui
 
+import android.annotation.SuppressLint
 import android.util.Log
+import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -40,9 +42,12 @@ import java.util.concurrent.Executors
     return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
 }*/
 
+@SuppressLint("RestrictedApi")
 @Composable
 fun CameraPreview(streamer: MJPEGStreamer,
-                  modifier: Modifier) {
+                  modifier: Modifier,
+                  enableTorch : Boolean = false
+) {
     val context = LocalContext.current
     val lifecycleOwner = rememberUpdatedState(LocalContext.current as LifecycleOwner).value
     val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -55,7 +60,7 @@ fun CameraPreview(streamer: MJPEGStreamer,
             val cameraProvider = cameraProviderFuture.get()
 
             val preview = Preview.Builder()
-                //.setTargetFrameRate(Range(30, 30))
+                .setDefaultResolution(Size(1280, 720))
                 .build().also {
                     it.surfaceProvider = previewView.surfaceProvider
             }
@@ -64,7 +69,8 @@ fun CameraPreview(streamer: MJPEGStreamer,
 
 
             val imageAnalyzer = ImageAnalysis.Builder()
-                //.setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .setDefaultResolution(Size(1280, 720))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build().also {
                 it.setAnalyzer(executor) { imageProxy ->
                     try {
@@ -83,12 +89,15 @@ fun CameraPreview(streamer: MJPEGStreamer,
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
+            val camera = cameraProvider.bindToLifecycle(
                 lifecycleOwner,
                 cameraSelector,
                 preview,
                 imageAnalyzer
             )
+
+            camera.cameraControl.enableTorch(enableTorch)
+
         }, ContextCompat.getMainExecutor(context))
 
         previewView

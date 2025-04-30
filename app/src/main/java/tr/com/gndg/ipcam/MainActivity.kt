@@ -6,11 +6,13 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -35,11 +37,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import tr.com.gndg.ipcam.utils.MyLifecycleObserver
-import tr.com.gndg.ipcam.utils.ObserverListenerInterface
 import tr.com.gndg.ipcam.server.MJPEGStreamer
 import tr.com.gndg.ipcam.ui.CameraPreview
 import tr.com.gndg.ipcam.ui.theme.IpCamTheme
+import tr.com.gndg.ipcam.utils.MyLifecycleObserver
+import tr.com.gndg.ipcam.utils.ObserverListenerInterface
 import tr.com.gndg.ipcam.utils.getLocalIpAddress
 
 class MainActivity : ComponentActivity(), ObserverListenerInterface{
@@ -122,6 +124,7 @@ fun CameraStreamScreen(streamer: MJPEGStreamer, modifier: Modifier, port: Int) {
     val ip = getLocalIpAddress(context)
 
     var openScreen by remember { mutableStateOf(false) }
+    var enableTorch by remember { mutableStateOf(false) }
 
     Column(modifier = modifier.fillMaxWidth()) {
 
@@ -144,20 +147,29 @@ fun CameraStreamScreen(streamer: MJPEGStreamer, modifier: Modifier, port: Int) {
                 }
             },
             trailingContent = {
-                Switch(checked = openScreen, onCheckedChange = {
-                    if (openScreen) {
-                        streamer.stop()
-                    } else {
-                        streamer.start()
-                    }
-                    openScreen = it
-                })
+                Row {
+                    Checkbox(
+                        checked = enableTorch,
+                        onCheckedChange = { enableTorch = it }
+                    )
+
+                    Switch(checked = openScreen, onCheckedChange = {
+                        if (openScreen) {
+                            streamer.stop()
+                        } else {
+                            streamer.start()
+                        }
+                        openScreen = it
+                    })
+                }
+
             })
 
         if (openScreen) {
             CameraPreview(
                 streamer = streamer,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                enableTorch = enableTorch,
             )
         }
     }

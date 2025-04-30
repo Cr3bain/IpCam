@@ -15,6 +15,10 @@ class MJPEGStreamer(port: Int) : NanoHTTPD(port) {
     //private val listeners = mutableListOf<(Bitmap) -> Unit>()
 
     override fun serve(session: IHTTPSession?): Response {
+
+        val targetFPS = 30
+        val frameInterval = 1000L / targetFPS // = 33
+
         val pipedInput = PipedInputStream()
         val pipedOutput = PipedOutputStream(pipedInput)
 
@@ -35,7 +39,7 @@ class MJPEGStreamer(port: Int) : NanoHTTPD(port) {
                     pipedOutput.write("\r\n".toByteArray())
                     pipedOutput.flush()
 
-                    Thread.sleep(100) // FPS ayarı (10 kare/saniye gibi düşün)
+                    Thread.sleep(frameInterval)
                 }
             } catch (_: IOException) {
                 // istemci bağlantısı kesildi
