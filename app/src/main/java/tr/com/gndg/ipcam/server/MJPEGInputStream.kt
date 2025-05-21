@@ -5,6 +5,8 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicReference
 
+// Maybe another day
+/*
 class MJPEGInputStream(
     private val bitmapRef: AtomicReference<Bitmap?>
 ) : InputStream() {
@@ -26,3 +28,4 @@ class MJPEGInputStream(
         return buffer[position++].toInt() and 0xFF
     }
 }
+*/
