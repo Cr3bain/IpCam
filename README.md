@@ -2,6 +2,8 @@
 
 📷 **IPCam** is a lightweight Android app that turns your device into a live MJPEG streaming IP camera using CameraX and Jetpack Compose.
 
+<img src="https://github.com/Cr3bain/IpCam/blob/main/screenshot/Screenshot_1.png" width="300" height="500">
+
 ---
 
 ## ✨ Features
@@ -34,7 +36,7 @@ cd ipcam
 ```
 ### 2. Open in Android Studio
 ```bash
-Use Android Studio Hedgehog (or later).
+Use Android Studio Meerkat (or later).
 ```
 ### 3. Run the app
 
