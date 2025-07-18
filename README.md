@@ -1,5 +1,8 @@
 # IPCam - Android MJPEG Camera Streaming
 
+😎 [Now on Google Play](https://play.google.com/store/apps/details?id=tr.com.gndg.ipcam)
+https://play.google.com/store/apps/details?id=tr.com.gndg.ipcam
+
 📷 **IPCam** is a lightweight Android app that turns your device into a live MJPEG streaming IP camera using CameraX and Jetpack Compose.
 
 <img src="https://github.com/Cr3bain/IpCam/blob/main/screenshot/Screenshot_1.png" width="300" height="500">
